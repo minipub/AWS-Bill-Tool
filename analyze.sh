@@ -4,6 +4,8 @@
 ## CloudWatch |  10000 |   1000  
 ##        EC2 |     88 |   1000 
 
+. ./util.sh
+
 if [ $# -eq 0 ] || [ `expr $# % 2` -ne 0 ]
 then
 	echo "Params not ok."
@@ -30,11 +32,14 @@ srv_title=SERVICE
 
 max_word_len=0
 
+declare -a qty_desc
+
 read_file () {
 	local month=$1
 	local file=$2
 	declare -n sres=$3
 	declare -n mcres=$4
+	local j=0
 	while read line
 	do
 		# echo $line  
@@ -42,16 +47,20 @@ read_file () {
 		arr=(${noblank_line//,/ })
 		srv=${arr[0]}
 		# echo $srv
-		if [ ${#srv} -gt $max_word_len ]
-		then
+		if [ ${#srv} -gt $max_word_len ];then
 			max_word_len=${#srv}
 		fi
 		cnt=${arr[1]}
-		if [ ${#cnt} -gt ${mcres[$month]} ]
-		then
+		if [ ${#cnt} -gt ${mcres[$month]} ];then
 			mcres[$month]=${#cnt}
 		fi
 		# sres[$srv,$month]=$cnt
+		if [ -z ${sres[$srv]} ];then
+			echo "------ $srv $j"
+			declare -p qty_desc
+			insert_array $srv qty_desc $j
+			j=$(($j+1))
+		fi
 		sres[$srv]+="${month},${cnt};"
 	done < <(cat $file | tail +2 | awk -F"," '{a[$3]+=$NF}END{for(i in a){printf "%s,%.10g\n", i, a[i]}}' | sort -t"," -k2,2nr)
 }
@@ -67,6 +76,8 @@ do
 done
 
 # echo "srv_res: ${srv_res[@]}"
+
+declare -p qty_desc
 
 print_title () {
 	if [ ${#srv_title} -gt $max_word_len ]

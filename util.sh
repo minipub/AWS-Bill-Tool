@@ -28,6 +28,6 @@ insert_array () {
 	done
 }
 
-brr=(a)
-insert_array e brr 2
-declare -p brr
+# brr=()
+# insert_array e brr 0
+# declare -p brr
