@@ -1,7 +1,8 @@
 #!/bin/bash
-## Need Bash 4.0+
+## Required: Bash 4.0+
+## The results are always sorted by which is the first column except the service name
 ##    SERVICE | 202109 | 202110  
-## CloudWatch |  10000 |   1000  
+## CloudWatch |  10000 |    900  
 ##        EC2 |     88 |   1000 
 
 . ./util.sh
@@ -18,17 +19,14 @@ params=("$@")
 for ((i=0; i<=$#-1; i+=2))
 do
 	month=${params[$i]}
-	echo "month: ${month}"
 	file=${params[$((i+1))]}
-	echo "file: ${file}"
+	# echo "month: ${month} file: ${file}"
 	month_file[$month]=$file
 	month_seq[$i]=$month
 done
 # echo ${month_file[@]}
 
 srv_title=SERVICE
-# last_month=202109
-# now_month=202110
 
 max_word_len=0
 
@@ -56,28 +54,26 @@ read_file () {
 		fi
 		# sres[$srv,$month]=$cnt
 		if [ -z ${sres[$srv]} ];then
-			echo "------ $srv $j"
-			declare -p qty_desc
+			# echo "------ $srv $j"
+			# declare -p qty_desc
 			insert_array $srv qty_desc $j
-			j=$(($j+1))
 		fi
+		j=$(($j+1))
 		sres[$srv]+="${month},${cnt};"
 	done < <(cat $file | tail +2 | awk -F"," '{a[$3]+=$NF}END{for(i in a){printf "%s,%.10g\n", i, a[i]}}' | sort -t"," -k2,2nr)
 }
 
 declare -A srv_res
 declare -A max_cnt_res
-for i in ${!month_file[@]}
+for month in ${month_seq[@]}
 do
-	month=$i
-	file=${month_file[$i]}
+	file=${month_file[$month]}
 	max_cnt_res[$month]=${#month}
 	read_file $month $file srv_res max_cnt_res
 done
 
 # echo "srv_res: ${srv_res[@]}"
-
-declare -p qty_desc
+# declare -p qty_desc
 
 print_title () {
 	if [ ${#srv_title} -gt $max_word_len ]
@@ -124,7 +120,7 @@ print_line () {
 }
 
 print_lines () {
-	for srv in ${!srv_res[@]}
+	for srv in ${qty_desc[@]}
 	do
 		items=${srv_res[$srv]}
 		print_line $srv $items 
@@ -132,16 +128,3 @@ print_lines () {
 }
 
 print_lines
-
-########
-# for i in ${!r1[@]}
-# do	
-# 	printf "$format" $i ${r1[$i]} ${r2[$i]}
-# 	unset 'r2[${i}]'
-# done
-
-# for j in ${!r2[@]}
-# do
-# 	printf "$format" $j "" ${r2[$j]}
-# done
-########
