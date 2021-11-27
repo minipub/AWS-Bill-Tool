@@ -10,7 +10,7 @@
 if [ $# -eq 0 ] || [ `expr $# % 2` -ne 0 ]
 then
 	echo "Params not ok."
-	echo "Usage: bash analyze.sh [<month> <file> ...]"
+	echo "Usage: bash abt.sh [<month> <file> ...]"
 	exit 1
 fi
 
