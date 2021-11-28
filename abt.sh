@@ -22,7 +22,6 @@ do
 	file=${params[$((i+1))]}
 	# echo "month: ${month} file: ${file}"
 	month_file[$month]=$file
-	# month_seq[$i]=$month
 	month_seq+=($month)
 done
 # echo ${month_file[@]}
@@ -32,8 +31,6 @@ show_percent=false
 if [ ${#month_seq[@]} -ge 2 ];then
 	show_percent=true
 fi
-
-echo "show_percent: " $show_percent
 
 srv_title=Service
 pct_title=Percent
@@ -98,25 +95,6 @@ set_month_cnt () {
 max_pct_len=0
 declare -A srv_pct_res
 
-get_pct () {
-	declare -n mth_cnt=$1
-	first=${month_seq[0]}
-	second=${month_seq[1]}
-	if [ -z ${mth_cnt[$first]} ] || [ -z ${mth_cnt[$second]} ];then
-		return
-	fi
-	pct=$(bc <<< "scale=3; (${mth_cnt[$first]}-${mth_cnt[$second]})/${mth_cnt[$second]}*100")
-	# echo "1st: " ${mth_cnt[$first]} ", 2nd: " ${mth_cnt[$second]} ", pct: " $pct
-	unset 'mth_cnt[${first}]'
-	unset 'mth_cnt[${second}]'
-	txt="${pct}%"
-	if [ $(bc <<< "$pct > 0") -eq 1 ];then
-		txt="+${txt}"
-	fi
-	echo $txt
-	# return $txt
-}
-
 get_max_pct_len () {
 	local month_cnt
 	declare -A month_cnt
@@ -127,9 +105,29 @@ get_max_pct_len () {
 		set_month_cnt month_cnt $items
 		# echo $srv
 		# declare -p month_cnt
-		txt=$(get_pct month_cnt)
-		# get_pct month_cnt
-		# txt=$?
+
+		first=${month_seq[0]}
+		second=${month_seq[1]}
+		if [ -z ${month_cnt[$first]} ] || [ -z ${month_cnt[$second]} ];then
+			unset 'month_cnt[${first}]'
+			unset 'month_cnt[${second}]'
+			continue
+		fi
+		# TODO cannot calc numbers like 1.0e-05, 1.0e+05
+		pct=$(bc <<< "scale=3; (${month_cnt[$first]}-${month_cnt[$second]})/${month_cnt[$second]}*100" 2>/dev/null)
+		# echo $srv
+		# echo "1st: " ${month_cnt[$first]} ", 2nd: " ${month_cnt[$second]} ", pct: " $pct
+		unset 'month_cnt[${first}]'
+		unset 'month_cnt[${second}]'
+		if [ -z $pct ];then
+			continue
+		fi
+		txt="${pct}%"
+		# echo "txt:" $txt
+		if [ $(bc <<< "$pct > 0") -eq 1 ];then
+			txt="+${txt}"
+		fi
+
 		srv_pct_res[$srv]=$txt
 		if [ ${#txt} -gt ${max_pct_len} ];then
 			max_pct_len=${#txt}
